@@ -1,8 +1,8 @@
 "use client";
 
-import { OrbitControls, Stats } from "@react-three/drei";
+import { Stats } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import DefaultFragShader from "~/shaders/fragShader.glsl";
 import vertShader from "~/shaders/vertShader.glsl";
@@ -22,10 +22,18 @@ const Texture = ({
 			filter_id: {
 				value: filter,
 			},
+      width:{
+        value:texture?.image?.width ?? 100,
+      },
+      height:{
+        value:texture?.image?.height ?? 100,
+      }
 		}),
 		[texture, filter]
 	);
-
+  if(!texture.image){
+    return null
+  }
 	return (
 		<mesh position={[0, 0, -10]}>
 			<planeGeometry attach='geometry' args={[10, 10]} />
@@ -42,7 +50,17 @@ const Texture = ({
 
 const Image = ({ url, filter }: { url: string; filter: number }) => {
 	const loader = new THREE.TextureLoader();
-	const texture = useMemo(() => loader.load(url), [url]);
+  const [texture,setTexture] = useState<THREE.Texture|null>(null);
+	useEffect(() => {
+    const getTexture = async()=>{
+      const imageTexture = await loader.loadAsync(url);
+      setTexture(imageTexture);
+    }
+    getTexture();
+  }, [url]);
+  if(!texture || !texture.image){
+    return null
+  }
 	return <Texture texture={texture} filter={filter} />;
 };
 
@@ -59,17 +77,17 @@ export default function ThreeScene({ imageSrc }: { imageSrc: string }) {
 				className='canvas'
 			>
 				<Image url={imageSrc} filter={filter} />
-				<OrbitControls />
+
 				<Stats />
 			</Canvas>
 			<button
 				onClick={() => {
-					setfilter((filter + 1) % 2);
+					setfilter((filter + 1) % 3);
 					console.log(filter);
 				}}
-				className='bg-red rounded p-4'
+				className='bg-amber-50 text-black rounded p-4'
 			>
-				click me
+				Switch Filters
 			</button>
 		</div>
 	);
